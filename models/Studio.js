@@ -8,6 +8,12 @@ const studioSchema = new mongoose.Schema(
       trim: true,
       maxlength: [100, 'Title cannot exceed 100 characters'],
     },
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      index: true,
+    },
     category: {
       type: String,
       required: [true, 'Category is required'],

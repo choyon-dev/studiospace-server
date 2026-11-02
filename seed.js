@@ -527,8 +527,41 @@ const seedDatabase = async () => {
       await Studio.deleteMany({});
     }
 
-    const inserted = await Studio.insertMany(sampleStudios);
-    console.log(`Successfully seeded ${inserted.length} high-fidelity studios across 6 global hubs with full technical specifications.`);
+    const slugify = (text) =>
+      text
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+    const slugMap = {
+      'The Daylight Loft': 'the-daylight-loft',
+      'Grid 4 Soundstage': 'grid-4-soundstage',
+      'Acoustic Vault': 'acoustic-vault',
+      'The Broadcast Lab': 'the-broadcast-lab',
+      'Culver Cine Stages': 'culver-cine-stages',
+      'Ceramica & Maker Space': 'ceramica-maker-space',
+      'Neon Horizon': 'neon-horizon',
+      'Bricktown Photo Loft': 'bricktown-photo-loft',
+      'Sound Haven': 'sound-haven',
+      'SoHo Skylight Atelier': 'soho-skylight-atelier',
+      'The Vault Soundstage': 'the-vault-soundstage',
+      'Abbey Sound Room': 'abbey-sound-room',
+    };
+
+    const studiosWithSlugs = sampleStudios.map((s) => {
+      const mainPart = s.title.split('—')[0].trim();
+      const slug = slugMap[mainPart] || slugify(mainPart);
+      return {
+        ...s,
+        slug,
+      };
+    });
+
+    const inserted = await Studio.insertMany(studiosWithSlugs);
+    console.log(`Successfully seeded ${inserted.length} high-fidelity studios with clean slugs across 6 global hubs.`);
     process.exit(0);
   } catch (error) {
     console.error('Seeding error:', error.message);

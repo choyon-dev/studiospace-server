@@ -5,6 +5,17 @@ const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+const slugify = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 router.get('/meta', async (req, res) => {
   try {
     const [categoriesAgg, hubsAgg, rateBoundsAgg, amenitiesAgg] = await Promise.all([
@@ -206,15 +217,27 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    let studio = null;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid studio ID format',
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      studio = await Studio.findById(id);
+    }
+
+    if (!studio) {
+      studio = await Studio.findOne({ slug: id.toLowerCase().trim() });
+    }
+
+    if (!studio) {
+      const cleanSlug = slugify(id);
+      studio = await Studio.findOne({
+        $or: [
+          { slug: cleanSlug },
+          { title: { $regex: new RegExp(`^${cleanSlug.replace(/-/g, ' ')}$`, 'i') } },
+          { title: { $regex: new RegExp(cleanSlug.replace(/-/g, '.*'), 'i') } },
+        ],
       });
     }
 
-    const studio = await Studio.findById(id);
     if (!studio) {
       return res.status(404).json({
         success: false,
@@ -276,8 +299,16 @@ router.post('/', verifyToken, async (req, res) => {
       parkingSpaces: String(rawSpecs.parkingSpaces || 'Dedicated on-site parking').trim(),
     };
 
+    let baseSlug = slugify(title);
+    let uniqueSlug = baseSlug;
+    let counter = 1;
+    while (await Studio.exists({ slug: uniqueSlug })) {
+      uniqueSlug = `${baseSlug}-${counter++}`;
+    }
+
     const newStudio = new Studio({
       title,
+      slug: uniqueSlug,
       category,
       hourlyRate: Number(hourlyRate),
       securityDeposit: securityDeposit ? Number(securityDeposit) : 0,
@@ -342,6 +373,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
     const updatableFields = [
       'title',
+      'slug',
       'category',
       'hourlyRate',
       'securityDeposit',
@@ -373,6 +405,10 @@ router.patch('/:id', verifyToken, async (req, res) => {
         }
       }
     });
+
+    if (req.body.title && !req.body.slug && !studio.slug) {
+      studio.slug = slugify(req.body.title);
+    }
 
     const updatedStudio = await studio.save();
 
