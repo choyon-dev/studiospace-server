@@ -122,6 +122,10 @@ const studioSchema = new mongoose.Schema(
         default: 'Dedicated on-site parking',
       },
     },
+    images: {
+      type: [String],
+      default: [],
+    },
     imageUrl: {
       type: String,
       required: [true, 'Studio image URL is required'],

@@ -273,12 +273,26 @@ router.post('/', verifyToken, async (req, res) => {
       coordinates,
       osmPlaceId,
       specs,
+      images,
       imageUrl,
       amenities,
       overview,
     } = req.body;
 
-    if (!title || !category || !hourlyRate || !maxCapacity || !location || !imageUrl || !overview) {
+    const rawImages = Array.isArray(images)
+      ? images.filter((img) => typeof img === 'string' && img.trim().length > 0)
+      : (imageUrl ? [imageUrl] : []);
+
+    if (rawImages.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'A minimum of 2 studio images are required to publish a listing.',
+      });
+    }
+
+    const primaryImageUrl = rawImages[0];
+
+    if (!title || !category || !hourlyRate || !maxCapacity || !location || !primaryImageUrl || !overview) {
       return res.status(400).json({
         success: false,
         message: 'Please provide all required basic studio information.',
@@ -320,7 +334,8 @@ router.post('/', verifyToken, async (req, res) => {
       coordinates: coordinates || null,
       osmPlaceId: osmPlaceId || null,
       specs: normalizedSpecs,
-      imageUrl,
+      images: rawImages,
+      imageUrl: primaryImageUrl,
       amenities: Array.isArray(amenities) ? amenities : [],
       overview,
       ownerEmail: req.user.email.toLowerCase(),
@@ -385,6 +400,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
       'coordinates',
       'osmPlaceId',
       'specs',
+      'images',
       'imageUrl',
       'amenities',
       'overview',
@@ -400,11 +416,25 @@ router.patch('/:id', verifyToken, async (req, res) => {
             ...req.body.specs,
             squareFeet: Number(req.body.specs.squareFeet) || studio.specs.squareFeet,
           };
-        } else {
+        } else if (field !== 'images') {
           studio[field] = req.body[field];
         }
       }
     });
+
+    if (req.body.images !== undefined) {
+      const validImages = Array.isArray(req.body.images)
+        ? req.body.images.filter((img) => typeof img === 'string' && img.trim().length > 0)
+        : [];
+      if (validImages.length < 2) {
+        return res.status(400).json({
+          success: false,
+          message: 'A minimum of 2 studio images are required.',
+        });
+      }
+      studio.images = validImages;
+      studio.imageUrl = validImages[0];
+    }
 
     if (req.body.title && !req.body.slug && !studio.slug) {
       studio.slug = slugify(req.body.title);
