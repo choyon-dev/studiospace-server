@@ -1,13 +1,5 @@
 const mongoose = require('mongoose');
 
-const studioCategories = [
-  'Photo Studio',
-  'Film Stage',
-  'Podcast Lounge',
-  'Music Suite',
-  'Workshop',
-];
-
 const studioSchema = new mongoose.Schema(
   {
     title: {
@@ -19,10 +11,7 @@ const studioSchema = new mongoose.Schema(
     category: {
       type: String,
       required: [true, 'Category is required'],
-      enum: {
-        values: studioCategories,
-        message: '{VALUE} is not a valid studio category',
-      },
+      trim: true,
     },
     hourlyRate: {
       type: Number,
@@ -43,6 +32,89 @@ const studioSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Location is required'],
       trim: true,
+    },
+    city: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    state: {
+      type: String,
+      trim: true,
+    },
+    country: {
+      type: String,
+      trim: true,
+      default: 'United States',
+    },
+    coordinates: {
+      lat: { type: Number },
+      lon: { type: Number },
+    },
+    osmPlaceId: {
+      type: String,
+    },
+    specs: {
+      squareFeet: {
+        type: Number,
+        required: [true, 'Square footage is required'],
+        default: 1500,
+        min: 50,
+      },
+      ceilingHeight: {
+        type: String,
+        required: [true, 'Ceiling height is required'],
+        trim: true,
+        default: '16 ft clearance',
+      },
+      floorType: {
+        type: String,
+        required: [true, 'Floor type is required'],
+        trim: true,
+        default: 'Seamless Polished Concrete',
+      },
+      powerService: {
+        type: String,
+        required: [true, 'Power service is required'],
+        trim: true,
+        default: '3-Phase 200A Camlock',
+      },
+      soundRating: {
+        type: String,
+        required: [true, 'Sound STC rating is required'],
+        trim: true,
+        default: 'STC 60 Soundproof',
+      },
+      hvacType: {
+        type: String,
+        required: [true, 'HVAC climate rating is required'],
+        trim: true,
+        default: 'Ultra-Silent Whisper Air (NC-20)',
+      },
+      freightAccess: {
+        type: String,
+        required: [true, 'Freight access is required'],
+        trim: true,
+        default: 'Ground-level loading dock',
+      },
+      lightingControl: {
+        type: String,
+        required: [true, 'Lighting control is required'],
+        trim: true,
+        default: '100% Blackout Capable',
+      },
+      internetSpeed: {
+        type: String,
+        required: [true, 'Internet connectivity is required'],
+        trim: true,
+        default: '1 Gbps Dedicated Fiber (Wi-Fi 6E)',
+      },
+      parkingSpaces: {
+        type: String,
+        required: [true, 'Parking details are required'],
+        trim: true,
+        default: 'Dedicated on-site parking',
+      },
     },
     imageUrl: {
       type: String,

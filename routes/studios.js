@@ -5,6 +5,80 @@ const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+router.get('/meta', async (req, res) => {
+  try {
+    const [categoriesAgg, hubsAgg, rateBoundsAgg, amenitiesAgg] = await Promise.all([
+      Studio.aggregate([
+        { $match: { category: { $exists: true, $ne: '' } } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+      ]),
+      Studio.aggregate([
+        { $match: { city: { $exists: true, $ne: '' } } },
+        {
+          $group: {
+            _id: '$city',
+            count: { $sum: 1 },
+            state: { $first: '$state' },
+            country: { $first: '$country' },
+          },
+        },
+        { $sort: { count: -1, _id: 1 } },
+      ]),
+      Studio.aggregate([
+        {
+          $group: {
+            _id: null,
+            minRate: { $min: '$hourlyRate' },
+            maxRate: { $max: '$hourlyRate' },
+            totalCount: { $sum: 1 },
+          },
+        },
+      ]),
+      Studio.distinct('amenities'),
+    ]);
+
+    const categories = categoriesAgg.map((item) => ({
+      name: item._id,
+      count: item.count,
+      slug: String(item._id)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, ''),
+    }));
+
+    const hubs = hubsAgg.map((item) => ({
+      city: item._id,
+      state: item.state || '',
+      country: item.country || 'United States',
+      count: item.count,
+      label: item.state ? `${item._id}, ${item.state}` : item._id,
+    }));
+
+    const rateBounds = rateBoundsAgg[0] || { minRate: 45, maxRate: 250, totalCount: 0 };
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        categories,
+        hubs,
+        rateRange: {
+          min: rateBounds.minRate || 40,
+          max: rateBounds.maxRate || 300,
+        },
+        amenities: amenitiesAgg || [],
+        totalStudios: rateBounds.totalCount || 0,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to aggregate studio metadata',
+      error: error.message,
+    });
+  }
+});
+
 router.get('/featured', async (req, res) => {
   try {
     const featuredStudios = await Studio.find()
@@ -46,20 +120,60 @@ router.get('/my', verifyToken, async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const { category, search, sortBy } = req.query;
+    const { category, hub, search, minPrice, maxPrice, sortBy } = req.query;
     const query = {};
 
     if (category && category !== 'All') {
-      query.category = category;
+      const categorySlug = String(category).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      query.$or = [
+        { category: new RegExp(`^${category.trim()}$`, 'i') },
+        { category: new RegExp(category.trim(), 'i') },
+      ];
+    }
+
+    if (hub && hub !== 'All') {
+      const hubRegex = new RegExp(hub.trim(), 'i');
+      if (query.$or) {
+        query.$and = [
+          { $or: query.$or },
+          { $or: [{ city: hubRegex }, { location: hubRegex }, { state: hubRegex }] },
+        ];
+        delete query.$or;
+      } else {
+        query.$or = [{ city: hubRegex }, { location: hubRegex }, { state: hubRegex }];
+      }
     }
 
     if (search) {
       const searchRegex = new RegExp(search.trim(), 'i');
-      query.$or = [
+      const searchConditions = [
         { title: searchRegex },
         { location: searchRegex },
+        { city: searchRegex },
         { overview: searchRegex },
+        { amenities: searchRegex },
+        { 'specs.powerService': searchRegex },
+        { 'specs.soundRating': searchRegex },
       ];
+
+      if (query.$and) {
+        query.$and.push({ $or: searchConditions });
+      } else if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchConditions }];
+        delete query.$or;
+      } else {
+        query.$or = searchConditions;
+      }
+    }
+
+    if (minPrice || maxPrice) {
+      query.hourlyRate = {};
+      if (minPrice && !isNaN(Number(minPrice))) {
+        query.hourlyRate.$gte = Number(minPrice);
+      }
+      if (maxPrice && !isNaN(Number(maxPrice))) {
+        query.hourlyRate.$lte = Number(maxPrice);
+      }
     }
 
     let sortOption = { createdAt: -1 };
@@ -130,6 +244,12 @@ router.post('/', verifyToken, async (req, res) => {
       securityDeposit,
       maxCapacity,
       location,
+      city,
+      state,
+      country,
+      coordinates,
+      osmPlaceId,
+      specs,
       imageUrl,
       amenities,
       overview,
@@ -138,9 +258,23 @@ router.post('/', verifyToken, async (req, res) => {
     if (!title || !category || !hourlyRate || !maxCapacity || !location || !imageUrl || !overview) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required studio details',
+        message: 'Please provide all required basic studio information.',
       });
     }
+
+    const rawSpecs = specs || {};
+    const normalizedSpecs = {
+      squareFeet: Number(rawSpecs.squareFeet) || 1200,
+      ceilingHeight: String(rawSpecs.ceilingHeight || '16 ft clearance').trim(),
+      floorType: String(rawSpecs.floorType || 'Seamless Polished Concrete').trim(),
+      powerService: String(rawSpecs.powerService || '3-Phase 200A Camlock').trim(),
+      soundRating: String(rawSpecs.soundRating || 'STC 60 Soundproof').trim(),
+      hvacType: String(rawSpecs.hvacType || 'Ultra-Silent Whisper Air (NC-20)').trim(),
+      freightAccess: String(rawSpecs.freightAccess || 'Ground-level loading dock').trim(),
+      lightingControl: String(rawSpecs.lightingControl || '100% Blackout Capable').trim(),
+      internetSpeed: String(rawSpecs.internetSpeed || '1 Gbps Dedicated Fiber (Wi-Fi 6E)').trim(),
+      parkingSpaces: String(rawSpecs.parkingSpaces || 'Dedicated on-site parking').trim(),
+    };
 
     const newStudio = new Studio({
       title,
@@ -149,6 +283,12 @@ router.post('/', verifyToken, async (req, res) => {
       securityDeposit: securityDeposit ? Number(securityDeposit) : 0,
       maxCapacity: Number(maxCapacity),
       location,
+      city: city || (location.split(',')[0] || '').trim(),
+      state: state || '',
+      country: country || 'United States',
+      coordinates: coordinates || null,
+      osmPlaceId: osmPlaceId || null,
+      specs: normalizedSpecs,
       imageUrl,
       amenities: Array.isArray(amenities) ? amenities : [],
       overview,
@@ -162,7 +302,7 @@ router.post('/', verifyToken, async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Studio created successfully',
+      message: 'Studio created successfully with full technical specifications',
       data: savedStudio,
     });
   } catch (error) {
@@ -207,6 +347,12 @@ router.patch('/:id', verifyToken, async (req, res) => {
       'securityDeposit',
       'maxCapacity',
       'location',
+      'city',
+      'state',
+      'country',
+      'coordinates',
+      'osmPlaceId',
+      'specs',
       'imageUrl',
       'amenities',
       'overview',
@@ -216,6 +362,12 @@ router.patch('/:id', verifyToken, async (req, res) => {
       if (req.body[field] !== undefined) {
         if (field === 'hourlyRate' || field === 'securityDeposit' || field === 'maxCapacity') {
           studio[field] = Number(req.body[field]);
+        } else if (field === 'specs' && typeof req.body.specs === 'object') {
+          studio.specs = {
+            ...studio.specs.toObject(),
+            ...req.body.specs,
+            squareFeet: Number(req.body.specs.squareFeet) || studio.specs.squareFeet,
+          };
         } else {
           studio[field] = req.body[field];
         }

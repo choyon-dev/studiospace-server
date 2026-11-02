@@ -50,6 +50,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/studios', require('./routes/studios'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/locations', require('./routes/locations'));
 
 app.use((req, res) => {
   res.status(404).json({
