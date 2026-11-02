@@ -45,7 +45,7 @@ router.get('/studio/:studioId', async (req, res) => {
 
     const query = {
       studioId,
-      status: { $ne: 'Cancelled' },
+      status: { $nin: ['Cancelled', 'Declined'] },
     };
 
     if (date) {
@@ -120,7 +120,7 @@ router.post('/', verifyToken, async (req, res) => {
     const existingBookings = await Booking.find({
       studioId,
       date,
-      status: { $ne: 'Cancelled' },
+      status: { $nin: ['Cancelled', 'Declined'] },
     });
 
     const hasCollision = existingBookings.some((booking) => {
@@ -136,6 +136,8 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
+    const initialStatus = studio.bookingMode === 'Request' ? 'Pending' : 'Confirmed';
+
     const newBooking = new Booking({
       studioId,
       studioTitle: studio.title,
@@ -147,14 +149,14 @@ router.post('/', verifyToken, async (req, res) => {
       endTime,
       totalHours: Number(totalHours),
       totalCost: Number(totalCost),
-      status: 'Confirmed',
+      status: initialStatus,
     });
 
     const savedBooking = await newBooking.save();
 
     return res.status(201).json({
       success: true,
-      message: 'Booking confirmed successfully',
+      message: studio.bookingMode === 'Request' ? 'Booking request submitted for host approval' : 'Booking confirmed successfully',
       data: savedBooking,
     });
   } catch (error) {
@@ -211,6 +213,118 @@ router.patch('/:id/cancel', verifyToken, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to cancel booking',
+      error: error.message,
+    });
+  }
+});
+
+router.get('/incoming', verifyToken, async (req, res) => {
+  try {
+    const userEmail = req.user.email.toLowerCase();
+    const myStudios = await Studio.find({ ownerEmail: userEmail }).select('_id');
+    const myStudioIds = myStudios.map((s) => s._id);
+
+    const incomingBookings = await Booking.find({
+      studioId: { $in: myStudioIds },
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: incomingBookings.length,
+      data: incomingBookings,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve incoming booking requests',
+      error: error.message,
+    });
+  }
+});
+
+router.patch('/:id/approve', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID format',
+      });
+    }
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    const studio = await Studio.findById(booking.studioId);
+    if (!studio || studio.ownerEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not own this studio workspace.',
+      });
+    }
+
+    booking.status = 'Confirmed';
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking request approved successfully',
+      data: booking,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to approve booking request',
+      error: error.message,
+    });
+  }
+});
+
+router.patch('/:id/decline', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking ID format',
+      });
+    }
+
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    const studio = await Studio.findById(booking.studioId);
+    if (!studio || studio.ownerEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not own this studio workspace.',
+      });
+    }
+
+    booking.status = 'Declined';
+    await booking.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking request declined and slot released',
+      data: booking,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to decline booking request',
       error: error.message,
     });
   }

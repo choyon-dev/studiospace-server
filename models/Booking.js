@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const bookingStatuses = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
+const bookingStatuses = ['Pending', 'Confirmed', 'Completed', 'Cancelled', 'Declined'];
 
 const bookingSchema = new mongoose.Schema(
   {

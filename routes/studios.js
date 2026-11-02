@@ -300,17 +300,39 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     const rawSpecs = specs || {};
+    const requiredSpecKeys = [
+      'squareFeet',
+      'ceilingHeight',
+      'floorType',
+      'powerService',
+      'soundRating',
+      'hvacType',
+      'freightAccess',
+      'lightingControl',
+      'internetSpeed',
+      'parkingSpaces',
+    ];
+
+    for (const key of requiredSpecKeys) {
+      if (!rawSpecs[key] || String(rawSpecs[key]).trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: `The technical specification "${key}" is required to publish a listing.`,
+        });
+      }
+    }
+
     const normalizedSpecs = {
-      squareFeet: Number(rawSpecs.squareFeet) || 1200,
-      ceilingHeight: String(rawSpecs.ceilingHeight || '16 ft clearance').trim(),
-      floorType: String(rawSpecs.floorType || 'Seamless Polished Concrete').trim(),
-      powerService: String(rawSpecs.powerService || '3-Phase 200A Camlock').trim(),
-      soundRating: String(rawSpecs.soundRating || 'STC 60 Soundproof').trim(),
-      hvacType: String(rawSpecs.hvacType || 'Ultra-Silent Whisper Air (NC-20)').trim(),
-      freightAccess: String(rawSpecs.freightAccess || 'Ground-level loading dock').trim(),
-      lightingControl: String(rawSpecs.lightingControl || '100% Blackout Capable').trim(),
-      internetSpeed: String(rawSpecs.internetSpeed || '1 Gbps Dedicated Fiber (Wi-Fi 6E)').trim(),
-      parkingSpaces: String(rawSpecs.parkingSpaces || 'Dedicated on-site parking').trim(),
+      squareFeet: Number(rawSpecs.squareFeet),
+      ceilingHeight: String(rawSpecs.ceilingHeight).trim(),
+      floorType: String(rawSpecs.floorType).trim(),
+      powerService: String(rawSpecs.powerService).trim(),
+      soundRating: String(rawSpecs.soundRating).trim(),
+      hvacType: String(rawSpecs.hvacType).trim(),
+      freightAccess: String(rawSpecs.freightAccess).trim(),
+      lightingControl: String(rawSpecs.lightingControl).trim(),
+      internetSpeed: String(rawSpecs.internetSpeed).trim(),
+      parkingSpaces: String(rawSpecs.parkingSpaces).trim(),
     };
 
     let baseSlug = slugify(title);
@@ -342,6 +364,7 @@ router.post('/', verifyToken, async (req, res) => {
       ownerName: req.user.name || 'Studio Host',
       rating: 5.0,
       reviewCount: 1,
+      bookingMode: req.body.bookingMode === 'Request' ? 'Request' : 'Instant',
     });
 
     const savedStudio = await newStudio.save();
@@ -404,6 +427,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
       'imageUrl',
       'amenities',
       'overview',
+      'bookingMode',
     ];
 
     updatableFields.forEach((field) => {
@@ -421,6 +445,29 @@ router.patch('/:id', verifyToken, async (req, res) => {
         }
       }
     });
+
+    if (req.body.specs && typeof req.body.specs === 'object') {
+      const requiredSpecKeys = [
+        'squareFeet',
+        'ceilingHeight',
+        'floorType',
+        'powerService',
+        'soundRating',
+        'hvacType',
+        'freightAccess',
+        'lightingControl',
+        'internetSpeed',
+        'parkingSpaces',
+      ];
+      for (const key of requiredSpecKeys) {
+        if (req.body.specs[key] !== undefined && String(req.body.specs[key]).trim().length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: `Specification "${key}" cannot be empty.`,
+          });
+        }
+      }
+    }
 
     if (req.body.images !== undefined) {
       const validImages = Array.isArray(req.body.images)

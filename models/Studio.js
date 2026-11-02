@@ -162,6 +162,11 @@ const studioSchema = new mongoose.Schema(
       default: 12,
       min: [0, 'Review count cannot be negative'],
     },
+    bookingMode: {
+      type: String,
+      enum: ['Instant', 'Request'],
+      default: 'Instant',
+    },
   },
   {
     timestamps: true,
