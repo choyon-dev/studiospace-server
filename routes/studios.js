@@ -362,8 +362,6 @@ router.post('/', verifyToken, async (req, res) => {
       overview,
       ownerEmail: req.user.email.toLowerCase(),
       ownerName: req.user.name || 'Studio Host',
-      rating: 5.0,
-      reviewCount: 1,
       bookingMode: req.body.bookingMode === 'Request' ? 'Request' : 'Instant',
     });
 
@@ -483,8 +481,14 @@ router.patch('/:id', verifyToken, async (req, res) => {
       studio.imageUrl = validImages[0];
     }
 
-    if (req.body.title && !req.body.slug && !studio.slug) {
-      studio.slug = slugify(req.body.title);
+    if (req.body.title && !req.body.slug) {
+      let baseSlug = slugify(req.body.title);
+      let uniqueSlug = baseSlug;
+      let counter = 1;
+      while (await Studio.exists({ slug: uniqueSlug, _id: { $ne: studio._id } })) {
+        uniqueSlug = `${baseSlug}-${counter++}`;
+      }
+      studio.slug = uniqueSlug;
     }
 
     const updatedStudio = await studio.save();

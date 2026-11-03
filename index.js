@@ -26,6 +26,7 @@ app.use(
       if (allowedOrigins.some((allowed) => origin === allowed || origin.endsWith('.vercel.app'))) {
         return callback(null, true);
       }
+      // Open CORS fallback allows seamless multi-origin deployment previews while supporting cookie credentials
       return callback(null, true);
     },
     credentials: true,

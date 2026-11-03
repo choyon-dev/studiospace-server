@@ -153,13 +153,13 @@ const studioSchema = new mongoose.Schema(
     },
     rating: {
       type: Number,
-      default: 4.8,
+      default: 0,
       min: [0, 'Rating cannot be below 0'],
       max: [5, 'Rating cannot exceed 5'],
     },
     reviewCount: {
       type: Number,
-      default: 12,
+      default: 0,
       min: [0, 'Review count cannot be negative'],
     },
     bookingMode: {

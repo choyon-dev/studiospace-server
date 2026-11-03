@@ -122,3 +122,4 @@ router.get('/check/:studioId', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+
