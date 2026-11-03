@@ -52,6 +52,7 @@ app.use('/api/studios', require('./routes/studios'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/wishlist', require('./routes/wishlist'));
 
 app.use((req, res) => {
   res.status(404).json({
