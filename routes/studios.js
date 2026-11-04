@@ -21,7 +21,15 @@ router.get('/meta', async (req, res) => {
     const [categoriesAgg, hubsAgg, rateBoundsAgg, amenitiesAgg] = await Promise.all([
       Studio.aggregate([
         { $match: { category: { $exists: true, $ne: '' } } },
-        { $group: { _id: '$category', count: { $sum: 1 } } },
+        { $sort: { rating: -1, reviewCount: -1, createdAt: -1 } },
+        {
+          $group: {
+            _id: '$category',
+            count: { $sum: 1 },
+            imageUrl: { $first: '$imageUrl' },
+            images: { $first: '$images' },
+          },
+        },
         { $sort: { count: -1, _id: 1 } },
       ]),
       Studio.aggregate([
@@ -52,6 +60,7 @@ router.get('/meta', async (req, res) => {
     const categories = categoriesAgg.map((item) => ({
       name: item._id,
       count: item.count,
+      imageUrl: item.imageUrl || (Array.isArray(item.images) && item.images[0]) || '',
       slug: String(item._id)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -85,6 +94,45 @@ router.get('/meta', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to aggregate studio metadata',
+      error: error.message,
+    });
+  }
+});
+
+router.get('/categories', async (req, res) => {
+  try {
+    const categoriesAgg = await Studio.aggregate([
+      { $match: { category: { $exists: true, $ne: '' } } },
+      { $sort: { rating: -1, reviewCount: -1, createdAt: -1 } },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          imageUrl: { $first: '$imageUrl' },
+          images: { $first: '$images' },
+        },
+      },
+      { $sort: { count: -1, _id: 1 } },
+    ]);
+
+    const categories = categoriesAgg.map((item) => ({
+      name: item._id,
+      count: item.count,
+      imageUrl: item.imageUrl || (Array.isArray(item.images) && item.images[0]) || '',
+      slug: String(item._id)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, ''),
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: categories,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch categories',
       error: error.message,
     });
   }
