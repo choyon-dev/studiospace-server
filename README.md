@@ -1,5 +1,9 @@
 # StudioSpace — Backend REST API
 
+> **Live API Base URL:** [https://studiospace-server-c4j2.onrender.com/api](https://studiospace-server-c4j2.onrender.com/api)  
+> **Live Frontend Application:** [https://studiospacelive.netlify.app](https://studiospacelive.netlify.app)  
+> **Examiner Test Credentials:** `examiner@studiospace.io` / `Test1234`
+
 High-performance Express.js backend for StudioSpace marketplace, featuring MongoDB Atlas integration, JWT security over HTTPOnly cookies, and strict double-booking collision prevention.
 
 ---
