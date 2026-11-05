@@ -17,13 +17,21 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'https://studiospace.vercel.app',
+  'https://studiospace.netlify.app',
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.some((allowed) => origin === allowed || origin.endsWith('.vercel.app'))) {
+      if (
+        allowedOrigins.some(
+          (allowed) =>
+            origin === allowed ||
+            origin.endsWith('.vercel.app') ||
+            origin.endsWith('.netlify.app')
+        )
+      ) {
         return callback(null, true);
       }
       // Open CORS fallback allows seamless multi-origin deployment previews while supporting cookie credentials
