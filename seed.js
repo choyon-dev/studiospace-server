@@ -6,7 +6,7 @@ dotenv.config();
 
 const sampleStudios = [
   {
-    title: 'The Daylight Loft — 20ft Cyclorama & Soundstage',
+    title: 'The Daylight Loft - 20ft Cyclorama & Soundstage',
     category: 'Photo Studio',
     hourlyRate: 85,
     securityDeposit: 150,
@@ -48,7 +48,7 @@ const sampleStudios = [
     reviewCount: 42,
   },
   {
-    title: 'Grid 4 Soundstage — Heavy Commercial Film Production',
+    title: 'Grid 4 Soundstage - Heavy Commercial Film Production',
     category: 'Film Stage',
     hourlyRate: 160,
     securityDeposit: 300,
@@ -90,7 +90,7 @@ const sampleStudios = [
     reviewCount: 54,
   },
   {
-    title: 'Acoustic Vault — Dolby Atmos 7.1.4 Immersive Music Suite',
+    title: 'Acoustic Vault - Dolby Atmos 7.1.4 Immersive Music Suite',
     category: 'Music Suite',
     hourlyRate: 120,
     securityDeposit: 200,
@@ -132,7 +132,7 @@ const sampleStudios = [
     reviewCount: 47,
   },
   {
-    title: 'Neon Horizon — Retro Wave Video & Synth Production',
+    title: 'Neon Horizon - Retro Wave Video & Synth Production',
     category: 'Music Suite',
     hourlyRate: 95,
     securityDeposit: 150,
@@ -174,7 +174,7 @@ const sampleStudios = [
     reviewCount: 31,
   },
   {
-    title: 'Apex Motion Stage — High-Clearance Virtual Production',
+    title: 'Apex Motion Stage - High-Clearance Virtual Production',
     category: 'Film Stage',
     hourlyRate: 210,
     securityDeposit: 400,
@@ -216,7 +216,7 @@ const sampleStudios = [
     reviewCount: 19,
   },
   {
-    title: 'The Broadcast Lab — 4K Multicam Live Podcast Lounge',
+    title: 'The Broadcast Lab - 4K Multicam Live Podcast Lounge',
     category: 'Podcast Lounge',
     hourlyRate: 75,
     securityDeposit: 100,
@@ -258,7 +258,7 @@ const sampleStudios = [
     reviewCount: 36,
   },
   {
-    title: 'Soundwave Warehouse — High-Rafter Industrial Studio',
+    title: 'Soundwave Warehouse - High-Rafter Industrial Studio',
     category: 'Photo Studio',
     hourlyRate: 65,
     securityDeposit: 100,
@@ -300,7 +300,7 @@ const sampleStudios = [
     reviewCount: 28,
   },
   {
-    title: 'Ceramica & Maker Space — Artisan Clay & Wood Workshop',
+    title: 'Ceramica & Maker Space - Artisan Clay & Wood Workshop',
     category: 'Workshop',
     hourlyRate: 55,
     securityDeposit: 80,
@@ -342,7 +342,7 @@ const sampleStudios = [
     reviewCount: 22,
   },
   {
-    title: 'The Foundry Live Stage — Industrial Film & Set Production',
+    title: 'The Foundry Live Stage - Industrial Film & Set Production',
     category: 'Film Stage',
     hourlyRate: 140,
     securityDeposit: 250,
@@ -384,7 +384,7 @@ const sampleStudios = [
     reviewCount: 33,
   },
   {
-    title: 'Hackney Canal Loft — Victorian Daylight Photo Stage',
+    title: 'Hackney Canal Loft - Victorian Daylight Photo Stage',
     category: 'Photo Studio',
     hourlyRate: 90,
     securityDeposit: 150,
@@ -426,7 +426,7 @@ const sampleStudios = [
     reviewCount: 45,
   },
   {
-    title: 'Shoreditch Broadcast Pod — Soundproof 4K Audio Suite',
+    title: 'Shoreditch Broadcast Pod - Soundproof 4K Audio Suite',
     category: 'Podcast Lounge',
     hourlyRate: 80,
     securityDeposit: 120,
@@ -468,7 +468,7 @@ const sampleStudios = [
     reviewCount: 26,
   },
   {
-    title: 'Distillery Heritage Atelier — Fine Wood & Design Workshop',
+    title: 'Distillery Heritage Atelier - Fine Wood & Design Workshop',
     category: 'Workshop',
     hourlyRate: 70,
     securityDeposit: 100,
@@ -585,7 +585,7 @@ const seedDatabase = async () => {
     };
 
     const studiosWithSlugs = sampleStudios.map((s) => {
-      const mainPart = s.title.split('—')[0].trim();
+      const mainPart = s.title.split('-')[0].trim();
       const slug = slugMap[mainPart] || slugify(mainPart);
       const catImages = galleryMap[s.category] || galleryMap['Photo Studio'];
       const images = [s.imageUrl, ...catImages.filter((u) => u !== s.imageUrl)].slice(0, 4);

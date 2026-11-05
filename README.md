@@ -1,4 +1,4 @@
-# StudioSpace — Backend REST API
+# StudioSpace - Backend REST API
 
 > **Live API Base URL:** [https://studiospace-server-c4j2.onrender.com/api](https://studiospace-server-c4j2.onrender.com/api)  
 > **Live Frontend Application:** [https://studiospacelive.netlify.app](https://studiospacelive.netlify.app)  

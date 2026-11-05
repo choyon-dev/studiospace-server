@@ -34,7 +34,6 @@ app.use(
       ) {
         return callback(null, true);
       }
-      // Open CORS fallback allows seamless multi-origin deployment previews while supporting cookie credentials
       return callback(null, true);
     },
     credentials: true,
