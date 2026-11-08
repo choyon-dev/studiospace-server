@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -47,13 +48,39 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(require('./middleware/logger'));
 
-app.get(['/', '/health', '/api/health'], (req, res) => {
-  res.status(200).json({
+const getHealthPayload = () => {
+  const stateMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+  const dbStatus = stateMap[mongoose.connection.readyState] || 'unknown';
+  return {
     success: true,
-    message: 'StudioSpace API is operational',
+    status: 'operational',
+    service: 'StudioSpace Backend API',
     version: '1.0.0',
+    database: {
+      status: dbStatus,
+      connected: mongoose.connection.readyState === 1,
+      host: mongoose.connection.host || 'cluster0.zudkfaa.mongodb.net',
+    },
+    uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
-  });
+  };
+};
+
+app.get('/', (req, res) => {
+  res.status(200).json(getHealthPayload());
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json(getHealthPayload());
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json(getHealthPayload());
 });
 
 app.use('/api/auth', require('./routes/auth'));
