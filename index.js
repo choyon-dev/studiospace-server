@@ -47,7 +47,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(require('./middleware/logger'));
 
-app.get('/', (req, res) => {
+app.get(['/', '/health', '/api/health'], (req, res) => {
   res.status(200).json({
     success: true,
     message: 'StudioSpace API is operational',
