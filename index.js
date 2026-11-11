@@ -16,7 +16,10 @@ connectDB();
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'https://studiospacelive.netlify.app',
   'https://studiospace.vercel.app',
   'https://studiospace.netlify.app',
 ].filter(Boolean);
